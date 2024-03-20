@@ -1,0 +1,21 @@
+Initial Field, Kinetic and Total Energies:
+2.107517e-04 9.439148e+06 9.439148e+06
+ntime = 100
+Final Field, Kinetic and Total Energies:
+7.758227e+03 9.431428e+06 9.439186e+06
+
+deposit time = 2.858768
+guard time = 0.000956
+solver time = 0.044227
+fft time = 0.876439
+push time = 8.419508
+sort time = 0.141006
+total solver time = 0.921622
+total particle time = 11.419283
+total time = 12.340905
+
+Push Time (nsec) = 8.921632
+Deposit Time (nsec) = 3.029260
+Sort Time (nsec) = 0.149415
+Total Particle Time (nsec) = 12.100307
+

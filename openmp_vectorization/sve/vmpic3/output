@@ -1,0 +1,51 @@
+VGPPOST3LT/VGPPUSH3LT/VPPORDER3LT
+
+ number of cpus found =          240
+ maximum number of threads =          240
+ using          240  thread(s)
+ Initial Field, Kinetic and Total Energies:
+ 0.1699107E-03 0.8494452E+08 0.8494452E+08
+ ntime =          100 kvec =            1
+ Final Field, Kinetic and Total Energies:
+ 0.1527382E+05 0.8492938E+08 0.8494465E+08
+ 
+ deposit time =    5.287682    
+ guard time =   5.1276986E-02
+ solver time =   0.1654740    
+ fft time =    3.283397    
+ push time =    6.808743    
+ sort time =    3.537007    
+ total solver time =    3.500148    
+ total particle time =    15.63343    
+ total time =    19.13358    
+ 
+ Push Time (nsec) =    1.202467    
+ Deposit Time (nsec) =   0.9338382    
+ Sort Time (nsec) =   0.6246579    
+ Total Particle Time (nsec) =    2.760963  
+
+VGPPOST3LT/VGPPUSHF3LT/VPPORDERF3LT
+
+ number of cpus found =          240
+ maximum number of threads =          240
+ using          240  thread(s)
+ Initial Field, Kinetic and Total Energies:
+ 0.1697007E-03 0.8494452E+08 0.8494452E+08
+ ntime =          100 kvec =            1
+ Final Field, Kinetic and Total Energies:
+ 0.1527382E+05 0.8492938E+08 0.8494465E+08
+ 
+ deposit time =    5.264264    
+ guard time =   5.0402995E-02
+ solver time =   0.1691620    
+ fft time =    3.280779    
+ push time =    7.990388    
+ sort time =    2.332510    
+ total solver time =    3.500344    
+ total particle time =    15.58716    
+ total time =    19.08751    
+ 
+ Push Time (nsec) =    1.411153    
+ Deposit Time (nsec) =   0.9297024    
+ Sort Time (nsec) =   0.4119361    
+ Total Particle Time (nsec) =    2.752792   
