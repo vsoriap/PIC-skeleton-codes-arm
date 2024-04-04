@@ -1,5 +1,14 @@
 /* header file for ssepush2.c */
 
+double ranorm();
+
+void cwfft2rinit(int mixup[], float complex sct[], int indx, int indy,
+                 int nxhyd, int nxyhd);
+
+void cdistr2t(float part[], float vtx, float vty, float vdx, float vdy,
+              int npx, int npy, int idimp, int npe, int nx, int ny,
+              int ipbc);
+
 void csse2xiscan2(int *isdata, int nths);
 
 void csse2gpush2lt(float part[], float fxy[], float qbm, float dt,

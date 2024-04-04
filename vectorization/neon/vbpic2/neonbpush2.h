@@ -1,5 +1,20 @@
 /* header file for ssebpush2.c */
 
+
+double ranorm();
+
+void cdistr2ht(float part[], float vtx, float vty, float vtz, float vdx,
+               float vdy, float vdz, int npx, int npy, int idimp,
+               int npe, int nx, int ny, int ipbc);
+
+void cvpois23(float complex q[], float complex fxy[], int isign,
+              float complex ffc[], float ax, float ay, float affp,
+              float *we, int nx, int ny, int nxvh, int nyv, int nxhd,
+              int nyhd);
+
+void cwfft2rinit(int mixup[], float complex sct[], int indx, int indy,
+                 int nxhyd, int nxyhd);
+
 void csse2xiscan2(int *isdata, int nths);
 
 void csse2gbpush23lt(float part[], float fxy[], float bxy[], float qbm,

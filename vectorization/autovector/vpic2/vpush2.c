@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <complex.h>
 #include <math.h>
-#include <xmmintrin.h>
 #include "vpush2.h"
 
 /*--------------------------------------------------------------------*/

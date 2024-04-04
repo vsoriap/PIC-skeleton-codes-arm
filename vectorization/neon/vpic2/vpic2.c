@@ -6,8 +6,8 @@
 #include <complex.h>
 #include <sys/time.h>
 #include "vpush2.h"
-#include "sselib2.h"
-#include "ssepush2.h"
+#include "neonlib2.h"
+#include "neonpush2.h"
 
 void dtimer(double *time, struct timeval *itime, int icntrl);
 
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 /* tend = time at end of simulation, in units of plasma frequency */
 /* dt = time interval between successive calculations */
 /* qme = charge on electron, in units of e */
-   float tend = 10.0, dt = 0.1, qme = -1.0;
+   float tend = 1.0, dt = 0.04, qme = -1.0;
 /* vtx/vty = thermal velocity of electrons in x/y direction */
 /* vx0/vy0 = drift velocity of electrons in x/y direction */
    float vtx = 1.0, vty = 1.0, vx0 = 0.0, vy0 = 0.0;
@@ -198,7 +198,7 @@ L2000:
 
 /* * * * end main iteration loop * * * */
 
-   printf("ntime = %i, kvec = %i\n",ntime,kvec);
+   printf("ntime = %i \n",ntime);
    printf("Final Field, Kinetic and Total Energies:\n");
    printf("%e %e %e\n",we,wke,wke+we);
 

@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <complex.h>
-#include <xmmintrin.h>
-#include <mm_malloc.h>
-#include "sselib2.h"
+#include "sse2neon.h"
+//#include <mm_malloc.h>
+#include "neonlib2.h"
 
 /*--------------------------------------------------------------------*/
 void sse_fallocate(float **s_f, int nsize, int *irc) {

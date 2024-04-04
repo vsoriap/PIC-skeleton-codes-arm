@@ -7,7 +7,118 @@
 #include <complex.h>
 #include <math.h>
 #include "sse2neon.h"
-#include "ssepush2.h"
+#include "neonpush2.h"
+
+/*--------------------------------------------------------------------*/
+double ranorm() {
+/* this program calculates a random number y from a gaussian distribution
+   with zero mean and unit variance, according to the method of
+   mueller and box:
+      y(k) = (-2*ln(x(k)))**1/2*sin(2*pi*x(k+1))
+      y(k+1) = (-2*ln(x(k)))**1/2*cos(2*pi*x(k+1)),
+   where x is a random number uniformly distributed on (0,1).
+   written for the ibm by viktor k. decyk, ucla
+local data                                                              */
+   static int r1 = 885098780, r2 = 1824280461;
+   static int r4 = 1396483093, r5 = 55318673;
+   static int iflg = 0;
+   static double h1l = 65531.0, h1u = 32767.0, h2l = 65525.0;
+   static double r0 = 0.0;
+   int isc, i1;
+   double ranorm, r3, asc, bsc, temp;
+   if (iflg==1) {
+      ranorm = r0;
+      r0 = 0.0;
+      iflg = 0;
+      return ranorm;
+   }
+   isc = 65536;
+   asc = (double) isc;
+   bsc = asc*asc;
+   i1 = r1 - (r1/isc)*isc;
+   r3 = h1l*(double) r1 + asc*h1u*(double) i1;
+   i1 = r3/bsc;
+   r3 -= ((double) i1)*bsc;
+   bsc = 0.5*bsc;
+   i1 = r2/isc;
+   isc = r2 - i1*isc;
+   r0 = h1l*(double) r2 + asc*h1u*(double) isc;
+   asc = 1.0/bsc;
+   isc = r0*asc;
+   r2 = r0 - ((double) isc)*bsc;
+   r3 += (double) isc + 2.0*h1u*(double) i1;
+   isc = r3*asc;
+   r1 = r3 - ((double) isc)*bsc;
+   temp = sqrt(-2.0*log((((double) r1) + ((double) r2)*asc)*asc));
+   isc = 65536;
+   asc = (double) isc;
+   bsc = asc*asc;
+   i1 = r4 - (r4/isc)*isc;
+   r3 = h2l*(double) r4 + asc*h1u*(double) i1;
+   i1 = r3/bsc;
+   r3 -= ((double) i1)*bsc;
+   bsc = 0.5*bsc;
+   i1 = r5/isc;
+   isc = r5 - i1*isc;
+   r0 = h2l*(double) r5 + asc*h1u*(double) isc;
+   asc = 1.0/bsc;
+   isc = r0*asc;
+   r5 = r0 - ((double) isc)*bsc;
+   r3 += (double) isc + 2.0*h1u*(double) i1;
+   isc = r3*asc;
+   r4 = r3 - ((double) isc)*bsc;
+   r0 = 6.28318530717959*((((double) r4) + ((double) r5)*asc)*asc);
+   ranorm = temp*sin(r0);
+   r0 = temp*cos(r0);
+   iflg = 1;
+   return ranorm;
+}
+
+/*--------------------------------------------------------------------*/
+void cwfft2rinit(int mixup[], float complex sct[], int indx, int indy,
+                 int nxhyd, int nxyhd) {
+/* this subroutine calculates tables needed by a two dimensional
+   real to complex fast fourier transform and its inverse.
+   input: indx, indy, nxhyd, nxyhd
+   output: mixup, sct
+   mixup = array of bit reversed addresses
+   sct = sine/cosine table
+   indx/indy = exponent which determines length in x/y direction,
+   where nx=2**indx, ny=2**indy
+   nxhyd = maximum of (nx/2,ny)
+   nxyhd = one half of maximum of (nx,ny)
+   written by viktor k. decyk, ucla
+local data                                                            */
+   int indx1, indx1y, nx, ny, nxy, nxhy, nxyh;
+   int j, k, lb, ll, jb, it;
+   float dnxy, arg;
+   indx1 = indx - 1;
+   indx1y = indx1 > indy ? indx1 : indy;
+   nx = 1L<<indx;
+   ny = 1L<<indy;
+   nxy = nx > ny ? nx : ny;
+   nxhy = 1L<<indx1y;
+/* bit-reverse index table: mixup[j] = 1 + reversed bits of j */
+   for (j = 0; j < nxhy; j++) {
+      lb = j;
+      ll = 0;
+      for (k = 0; k < indx1y; k++) {
+         jb = lb/2;
+         it = lb - 2*jb;
+         lb = jb;
+         ll = 2*ll + it;
+      }
+      mixup[j] = ll + 1;
+   }
+/* sine/cosine table for the angles 2*n*pi/nxy */
+   nxyh = nxy/2;
+   dnxy = 6.28318530717959/(float) nxy;
+   for (j = 0; j < nxyh; j++) {
+      arg = dnxy*(float) j;
+      sct[j] = cosf(arg) - sinf(arg)*_Complex_I;
+   }
+   return;
+}
 
 /*--------------------------------------------------------------------*/
 void csse2xiscan2(int *isdata, int nths) {
@@ -2042,3 +2153,208 @@ void csse2wfft2r2_(float complex *f, int *isign, int *mixup,
                 *nxyhd);
    return;
 }
+
+/*--------------------------------------------------------------------*/
+void cvpois22(float complex q[], float complex fxy[], int isign,
+              float complex ffc[], float ax, float ay, float affp,
+              float *we, int nx, int ny, int nxvh, int nyv, int nxhd,
+              int nyhd) {
+/* this subroutine solves 2d poisson's equation in fourier space for
+   force/charge (or convolution of electric field over particle shape)
+   with periodic boundary conditions.
+   for isign = 0, input: isign,ax,ay,affp,nx,ny,nxvh,nyhd, output: ffc
+   for isign /= 0, input: q,ffc,isign,nx,ny,nxvh,nyhd, output: fxy,we
+   approximate flop count is: 26*nxc*nyc + 12*(nxc + nyc)
+   where nxc = nx/2 - 1, nyc = ny/2 - 1
+   equation used is:
+   fx[ky][kx] = -sqrt(-1)*kx*g[ky][kx]*s[ky][kx]*q[ky][kx],
+   fy[ky][kx] = -sqrt(-1)*ky*g[ky][kx]*s[ky][kx]*q[ky][kx],
+   where kx = 2pi*j/nx, ky = 2pi*k/ny, and j,k = fourier mode numbers,
+   g[ky][kx] = (affp/(kx**2+ky**2))*s[ky][kx],
+   s[ky][kx] = exp(-((kx*ax)**2+(ky*ay)**2)/2), except for
+   fx(kx=pi) = fy(kx=pi) = fx(ky=pi) = fy(ky=pi) = 0, and
+   fx(kx=0,ky=0) = fy(kx=0,ky=0) = 0.
+   q[k][j] = complex charge density for fourier mode (j,k)
+   fxy[k][j][0] = x component of complex force/charge,
+   fxy[k][j][1] = y component of complex force/charge,
+   all for fourier mode (j,k)
+   if isign = 0, form factor array is prepared
+   if isign is not equal to 0, force/charge is calculated
+   cimag(ffc[k][j]) = finite-size particle shape factor s
+   for fourier mode (j,k)
+   creal(ffc[k][j]) = potential green's function g
+   for fourier mode (j,k)
+   ax/ay = half-width of particle in x/y direction
+   affp = normalization constant = nx*ny/np, where np=number of particles
+   electric field energy is also calculated, using
+   we = nx*ny*sum((affp/(kx**2+ky**2))*|q[ky][kx]*s[ky][kx]|**2)
+   nx/ny = system length in x/y direction
+   nxvh = first dimension of field arrays, must be >= nxh
+   nyv = second dimension of field arrays, must be >= ny
+   nxhd = first dimension of form factor array, must be >= nxh
+   nyhd = second dimension of form factor array, must be >= nyh
+   vectorizable version
+local data                                                 */
+   int nxh, nyh, j, k, k1, kk, kj;
+   float dnx, dny, dkx, dky, at1, at2, at3, at4;
+   float complex zero, zt1, zt2;
+   double wp;
+   nxh = nx/2;
+   nyh = 1 > ny/2 ? 1 : ny/2;
+   dnx = 6.28318530717959/(float) nx;
+   dny = 6.28318530717959/(float) ny;
+   zero = 0.0 + 0.0*_Complex_I;
+   if (isign != 0)
+      goto L30;
+/* prepare form factor array */
+   for (k = 0; k < nyh; k++) {
+      dky = dny*(float) k;
+      kk = nxhd*k;
+      at1 = dky*dky;
+      at2 = pow((dky*ay),2);
+      for (j = 0; j < nxh; j++) {
+         dkx = dnx*(float) j;
+         at3 = dkx*dkx + at1;
+         at4 = exp(-0.5*(pow((dkx*ax),2) + at2));
+         if (at3==0.0) {
+            ffc[j+kk] = affp + 1.0*_Complex_I;
+         }
+         else {
+            ffc[j+kk] = (affp*at4/at3) + at4*_Complex_I;
+         }
+      }
+   }
+   return;
+/* calculate force/charge and sum field energy */
+L30: wp = 0.0;
+/* mode numbers 0 < kx < nx/2 and 0 < ky < ny/2 */
+   for (k = 1; k < nyh; k++) {
+      dky = dny*(float) k;
+      kk = nxhd*k;
+      kj = nxvh*k;
+      k1 = nxvh*ny - kj;
+#pragma ivdep
+      for (j = 1; j < nxh; j++) {
+         at1 = crealf(ffc[j+kk])*cimagf(ffc[j+kk]);
+         at2 = at1*dnx*(float) j;
+         at3 = dky*at1;
+         zt1 = cimagf(q[j+kj]) - crealf(q[j+kj])*_Complex_I;
+         zt2 = cimagf(q[j+k1]) - crealf(q[j+k1])*_Complex_I;
+         fxy[2*j+2*kj] = at2*zt1;
+         fxy[1+2*j+2*kj] = at3*zt1;
+         fxy[2*j+2*k1] = at2*zt2;
+         fxy[1+2*j+2*k1] = -at3*zt2;
+         at1 = at1*(q[j+kj]*conjf(q[j+kj]) + q[j+k1]*conjf(q[j+k1]));
+         wp += (double) at1;
+      }
+   }
+/* mode numbers kx = 0, nx/2 */
+#pragma ivdep
+   for (k = 1; k < nyh; k++) {
+      kk = nxhd*k;
+      kj = nxvh*k;
+      k1 = nxvh*ny - kj;
+      at1 = crealf(ffc[kk])*cimagf(ffc[kk]);
+      at3 = at1*dny*(float) k;
+      zt1 = cimagf(q[kj]) - crealf(q[kj])*_Complex_I;
+      fxy[2*kj] = zero;
+      fxy[1+2*kj] = at3*zt1;
+      fxy[2*k1] = zero;
+      fxy[1+2*k1] = zero;
+      at1 = at1*(q[kj]*conjf(q[kj]));
+      wp += (double) at1;
+   }
+/* mode numbers ky = 0, ny/2 */
+   k1 = 2*nxvh*nyh;
+#pragma ivdep
+   for (j = 1; j < nxh; j++) {
+      at1 = crealf(ffc[j])*cimagf(ffc[j]);
+      at2 = at1*dnx*(float) j;
+      zt1 = cimagf(q[j]) - crealf(q[j])*_Complex_I;
+      fxy[2*j] = at2*zt1;
+      fxy[1+2*j] = zero;
+      fxy[2*j+k1] = zero;
+      fxy[1+2*j+k1] = zero;
+      at1 = at1*(q[j]*conjf(q[j]));
+      wp += (double) at1;
+   }
+   fxy[0] = zero;
+   fxy[1] = zero;
+   fxy[k1] = zero;
+   fxy[1+k1] = zero;
+   *we = wp*(float) (nx*ny);
+   return;
+}
+
+/*--------------------------------------------------------------------*/
+void cdistr2t(float part[], float vtx, float vty, float vdx, float vdy,
+              int npx, int npy, int idimp, int npe, int nx, int ny,
+              int ipbc) {
+/* for 2d code, this subroutine calculates initial particle co-ordinates
+   and velocities with uniform density and maxwellian velocity with drift
+   part[0][n] = position x of particle n
+   part[1][n] = position y of particle n
+   part[2][n] = velocity vx of particle n
+   part[3][n] = velocity vy of particle n
+   vtx/vty = thermal velocity of electrons in x/y direction
+   vdx/vdy = drift velocity of beam electrons in x/y direction
+   npx/npy = initial number of particles distributed in x/y direction
+   idimp = size of phase space = 4
+   npe = first dimension of particle array
+   nx/ny = system length in x/y direction
+   ipbc = particle boundary condition = (0,1,2,3) =
+   (none,2d periodic,2d reflecting,mixed reflecting/periodic)
+   ranorm = gaussian random number with zero mean and unit variance
+local data                                                            */
+   int j, k, k1, npxy;
+   float edgelx, edgely, at1, at2, at3, sum1, sum2;
+   double dsum1, dsum2;
+   npxy = npx*npy;
+/* set boundary values */
+   edgelx = 0.0;
+   edgely = 0.0;
+   at1 = (float) nx/(float) npx;
+   at2 = (float) ny/(float) npy;
+   if (ipbc==2) {
+      edgelx = 1.0;
+      edgely = 1.0;
+      at1 = (float) (nx-2)/(float) npx;
+      at2 = (float) (ny-2)/(float) npy;
+   }
+   else if (ipbc==3) {
+      edgelx = 1.0;
+      at1 = (float) (nx-2)/(float) npx;
+   }
+/* uniform density profile */
+   for (k = 0; k < npy; k++) {
+      k1 = npx*k;
+      at3 = edgely + at2*(((float) k) + 0.5);
+      for (j = 0; j < npx; j++) {
+         part[j+k1] = edgelx + at1*(((float) j) + 0.5);
+         part[j+k1+npe] = at3;
+      }
+   }
+/* maxwellian velocity distribution */
+   for (j = 0; j < npxy; j++) {
+      part[j+2*npe] = vtx*ranorm();
+      part[j+3*npe] = vty*ranorm();
+   }
+/* add correct drift */
+   dsum1 = 0.0;
+   dsum2 = 0.0;
+   for (j = 0; j < npxy; j++) {
+      dsum1 += part[j+2*npe];
+      dsum2 += part[j+3*npe];
+   }
+   sum1 = dsum1;
+   sum2 = dsum2;
+   at1 = 1.0/(float) npxy;
+   sum1 = at1*sum1 - vdx;
+   sum2 = at1*sum2 - vdy;
+   for (j = 0; j < npxy; j++) {
+      part[j+2*npe] -= sum1;
+      part[j+3*npe] -= sum2;
+   }
+   return;
+}
+

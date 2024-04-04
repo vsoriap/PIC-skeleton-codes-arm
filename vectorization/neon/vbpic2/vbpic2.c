@@ -6,8 +6,8 @@
 #include <complex.h>
 #include <sys/time.h>
 #include "vbpush2.h"
-#include "sselib2.h"
-#include "ssebpush2.h"
+#include "neonlib2.h"
+#include "neonbpush2.h"
 
 void dtimer(double *time, struct timeval *itime, int icntrl);
 
@@ -270,6 +270,7 @@ L500: if (nloop <= ntime)
       else {
          csse2gbpush23lt(partt,fxyze,bxyze,qbme,dt,dth,&wke,idimp,np,
                          npe,nx,ny,nxe,nye,ipbc);
+      }
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tpush += time;
@@ -304,7 +305,6 @@ L2000:
 /* * * * end main iteration loop * * * */
 
    printf("ntime, relativity = %i,%i\n",ntime,relativity);
-   printf("kvec = %i\n",kvec);
    wt = we + wf + wm;
    printf("Final Total Field, Kinetic and Total Energies:\n");
    printf("%e %e %e\n",wt,wke,wke+wt);

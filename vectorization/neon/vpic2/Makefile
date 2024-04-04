@@ -13,15 +13,15 @@
 #CCOPTS = -O3 -fno-tree-vectorize -Wall -std=c99
 
 # Makefile Intel compiler with Linux
-CC = icc
+#CC = icc
 
-CCOPTS = -O3 -std=c99
+#CCOPTS = -O3 -std=c99
 #CCOPTS = -O3 -no-vec -std=c99
 
 # Makefile gfortran compiler with Linux
-#CC = gcc
+CC = gcc
 
-#CCOPTS = -O3 -ftree-vectorize -Wall -std=c99
+CCOPTS = -O3 -ftree-vectorize -Wall -std=c99
 #CCOPTS = -O3 -fno-tree-vectorize -Wall -std=c99
 
 # Makefile PGI compiler with Linux
@@ -40,8 +40,8 @@ CCOPTS = -O3 -std=c99
 
 all : cvpic2
 
-cvpic2 : cvpic2.o cvpush2.o cneonlib2.o cneonpush2.o dtimer.o
-	$(CC) $(CCOPTS) -o cvpic2 cvpic2.o cvpush2.o cneonlib2.o cneonpush2.o \
+cvpic2 : cvpic2.o cneonlib2.o cneonpush2.o dtimer.o
+	$(CC) $(CCOPTS) -o cvpic2 cvpic2.o cneonlib2.o cneonpush2.o \
 	dtimer.o -lm
 
 # Compilation rules

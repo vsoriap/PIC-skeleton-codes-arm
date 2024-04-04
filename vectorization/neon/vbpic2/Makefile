@@ -18,9 +18,9 @@
 
 all : cvbpic2  
 
-cvbpic2 : cvbpic2.o csselib2.o cssebpush2.o dtimer.o
-	$(CC) $(CCOPTS) -o cvbpic2 cvbpic2.o csselib2.o \
-	cssebpush2.o dtimer.o -lm
+cvbpic2 : cvbpic2.o cneonlib2.o cneonbpush2.o dtimer.o
+	$(CC) $(CCOPTS) -o cvbpic2 cvbpic2.o cneonlib2.o \
+	cneonbpush2.o dtimer.o -lm
 
 
 # Compilation rules
@@ -28,14 +28,11 @@ cvbpic2 : cvbpic2.o csselib2.o cssebpush2.o dtimer.o
 dtimer.o : dtimer.c
 	$(CC) $(CCOPTS) -c dtimer.c
 
-csselib2.o : sselib2.c
-	$(CC) $(CCOPTS) -o csselib2.o -c sselib2.c
+cneonlib2.o : neonlib2.c
+	$(CC) $(CCOPTS) -o cneonlib2.o -c neonlib2.c
 
-csseflib2.o : sseflib2.c
-	$(CC) $(CCOPTS) -o csseflib2.o -c sseflib2.c
-
-cssebpush2.o : ssebpush2.c
-	$(CC) $(CCOPTS) -o cssebpush2.o -c ssebpush2.c
+cneonbpush2.o : neonbpush2.c
+	$(CC) $(CCOPTS) -o cneonbpush2.o -c neonbpush2.c
 
 cvbpic2.o : vbpic2.c
 	$(CC) $(CCOPTS) -o cvbpic2.o -c vbpic2.c
@@ -44,4 +41,4 @@ clean :
 	rm -f *.o *.mod
 
 clobber: clean
-	rm -f fvbpic2 cvbpic2 f03vbpic2
+	rm -f cvbpic2
