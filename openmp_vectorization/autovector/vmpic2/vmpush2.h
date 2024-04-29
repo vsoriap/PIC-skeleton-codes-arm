@@ -105,3 +105,12 @@ void cwfft2rvmx(float complex f[], int isign, int mixup[],
 void cwfft2rvm2(float complex f[], int isign, int mixup[],
                 float complex sct[], int indx, int indy, int nxhd,
                 int nyd, int nxhyd, int nxyhd);
+
+void fallocate(float **s_f, int nsize, int *irc);
+
+void callocate(float complex **s_c, int nsize, int *irc);
+
+void iallocate(int **s_i, int nsize, int *irc);
+
+void deallocate(void *s_d);
+

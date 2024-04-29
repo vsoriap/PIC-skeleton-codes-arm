@@ -4048,3 +4048,78 @@ void cwfft2rvm2_(float complex *f, int *isign, int *mixup,
    return;
 }
 
+
+/*--------------------------------------------------------------------*/
+void fallocate(float **s_f, int nsize, int *irc) {
+/* allocate aligned float memory on SSE return pointer to C */
+/* size is padded to be a multiple of the alignment length */
+/* local data */
+/* NV = vector length for 32 bit data */
+#define NV             4
+   int ns;
+   void *sptr = NULL;
+   ns = NV*((nsize - 1)/NV + 1);
+   sptr = malloc(ns*sizeof(float));
+   if (sptr==NULL) {
+      printf("malloc float Error,len=%d\n",ns);
+      *irc = 1;
+   }
+   *s_f = (float *)sptr;
+   return;
+#undef NV
+}
+
+/*--------------------------------------------------------------------*/
+void callocate(float complex **s_c, int nsize, int *irc) {
+/* allocate aligned float complex memory on SSE return pointer to C */
+/* size is padded to be a multiple of the alignment length          */
+/* local data */
+/* NV = vector length for 64 bit data */
+#define NV             2
+   int ns;
+   void *sptr = NULL;
+   ns = NV*((nsize - 1)/NV + 1);
+   sptr = malloc(ns*sizeof(float complex));
+   if (sptr==NULL) {
+      printf("malloc float complex Error,len=%d\n",ns);
+      *irc = 1;
+   }
+   *s_c = (float complex *)sptr;
+   return;
+#undef NV
+}
+
+/*--------------------------------------------------------------------*/
+void iallocate(int **s_i, int nsize, int *irc) {
+/* allocate aligned int memory on SSE, return pointer to C */
+/* size is padded to be a multiple of the alignment length */
+/* local data */
+/* NV = vector length for 32 bit data */
+#define NV             4
+   int ns;
+   void *sptr = NULL;
+   ns = NV*((nsize - 1)/NV + 1);
+   sptr = malloc(ns*sizeof(int));
+   if (sptr==NULL) {
+      printf("malloc int Error,len=%d\n",ns);
+      *irc = 1;
+   }
+   *s_i = (int *)sptr;
+   return;
+#undef NV
+}
+
+/*--------------------------------------------------------------------*/
+void deallocate(void *s_d) {
+   free(s_d);
+   return;
+}
+
+/* Interfaces to Fortran */
+
+/*--------------------------------------------------------------------*/
+void deallocate_(void *sp_d) {
+/* pointer in Fortran should also be nullified */
+   deallocate(sp_d);
+   return;
+}

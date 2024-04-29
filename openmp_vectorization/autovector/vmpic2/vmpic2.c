@@ -7,8 +7,6 @@
 #include <sys/time.h>
 #include "vmpush2.h"
 #include "omplib.h"
-#include "sselib2.h"
-#include "ssempush2.h"
 
 void dtimer(double *time, struct timeval *itime, int icntrl);
 
@@ -118,9 +116,9 @@ int main(int argc, char *argv[]) {
 /* allocate vector field data */
    nxe = lvect*((nxe - 1)/lvect + 1);
    nxeh = nxe/2;
-   sse_fallocate(&qe,nxe*nye,&irc);
-   sse_fallocate(&fxye,ndim*nxe*nye,&irc);
-   sse_callocate(&ffc,nxh*nyh,&irc);
+   fallocate(&qe,nxe*nye,&irc);
+   fallocate(&fxye,ndim*nxe*nye,&irc);
+   callocate(&ffc,nxh*nyh,&irc);
    if (irc != 0) {
       printf("aligned field allocation error: irc = %d\n",irc);
    }
@@ -148,8 +146,8 @@ int main(int argc, char *argv[]) {
    nppmx0 = lvect*((nppmx0 - 1)/lvect + 1);
    ntmax = lvect*(ntmax/lvect + 1);
    npbmx = lvect*((npbmx - 1)/lvect + 1);
-   sse_fallocate(&ppartt,nppmx0*idimp*mxy1,&irc);
-   sse_fallocate(&ppbuff,npbmx*idimp*mxy1,&irc);
+   fallocate(&ppartt,nppmx0*idimp*mxy1,&irc);
+   fallocate(&ppbuff,npbmx*idimp*mxy1,&irc);
    ncl = (int *) malloc(8*mxy1*sizeof(int));
    ihole = (int *) malloc(2*(ntmax+1)*mxy1*sizeof(int));
    kp = (int *) malloc(nppmx0*mxy1*sizeof(int));
@@ -182,24 +180,15 @@ L500: if (nloop <= ntime)
       for (j = 0; j < nxe*nye; j++) {
          qe[j] = 0.0;
       }
-      if (kvec==1)
-         cvgppost2lt(ppartt,qe,kpic,qme,nppmx0,idimp,mx,my,nxe,nye,mx1,
+      cvgppost2lt(ppartt,qe,kpic,qme,nppmx0,idimp,mx,my,nxe,nye,mx1,
                      mxy1);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2gppost2lt(ppartt,qe,kpic,qme,nppmx0,idimp,mx,my,nxe,nye,
-                        mx1,mxy1);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tdpost += time;
 
 /* add guard cells with OpenMP: updates qe */
       dtimer(&dtime,&itime,-1);
-      if (kvec==1)
-         caguard2l(qe,nx,ny,nxe,nye);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2aguard2l(qe,nx,ny,nxe,nye);
+      caguard2l(qe,nx,ny,nxe,nye);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tguard += time;
@@ -207,13 +196,8 @@ L500: if (nloop <= ntime)
 /* transform charge to fourier space with OpenMP: updates qe */
       dtimer(&dtime,&itime,-1);
       isign = -1;
-      if (kvec==1)
-         cwfft2rvmx((float complex *)qe,isign,mixup,sct,indx,indy,nxeh,
+      cwfft2rvmx((float complex *)qe,isign,mixup,sct,indx,indy,nxeh,
                     nye,nxhy,nxyh);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2wfft2rmx((float complex *)qe,isign,mixup,sct,indx,indy,
-                        nxeh,nye,nxhy,nxyh);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tfft += time;
@@ -221,13 +205,8 @@ L500: if (nloop <= ntime)
 /* calculate force/charge in fourier space with OpenMP: updates fxye, we */
       dtimer(&dtime,&itime,-1);
       isign = -1;
-      if (kvec==1)
-         cvmpois22((float complex *)qe,(float complex *)fxye,isign,ffc,
+      cvmpois22((float complex *)qe,(float complex *)fxye,isign,ffc,
                    ax,ay,affp,&we,nx,ny,nxeh,nye,nxh,nyh);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2mpois22((float complex *)qe,(float complex *)fxye,isign,
-                      ffc,ax,ay,affp,&we,nx,ny,nxeh,nye,nxh,nyh);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tfield += time;
@@ -235,24 +214,15 @@ L500: if (nloop <= ntime)
 /* transform force to real space with OpenMP: updates fxye */
       dtimer(&dtime,&itime,-1);
       isign = 1;
-      if (kvec==1)
-         cwfft2rvm2((float complex *)fxye,isign,mixup,sct,indx,indy,nxeh,
+      cwfft2rvm2((float complex *)fxye,isign,mixup,sct,indx,indy,nxeh,
                     nye,nxhy,nxyh);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2wfft2rm2((float complex *)fxye,isign,mixup,sct,indx,indy,
-                       nxeh,nye,nxhy,nxyh);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tfft += time;
 
 /* copy guard cells with OpenMP: updates fxye */
       dtimer(&dtime,&itime,-1);
-      if (kvec==1)
-         ccguard2l(fxye,nx,ny,nxe,nye);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2cguard2l(fxye,nx,ny,nxe,nye);
+      ccguard2l(fxye,nx,ny,nxe,nye);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tguard += time;
@@ -260,23 +230,9 @@ L500: if (nloop <= ntime)
 /* push particles with OpenMP: */
       wke = 0.0;
       dtimer(&dtime,&itime,-1);
-/* updates ppartt, wke */
-/*    if (kvec==1)                                                     */
-/*       cvgppush2lt(ppartt,fxye,kpic,qbme,dt,&wke,idimp,nppmx0,nx,ny, */
-/*                   mx,my,nxe,nye,mx1,mxy1,ipbc);                     */
-/* SSE2 function */
-/*    else if (kvec==2)                                                */
-/*       csse2gppush2lt(ppartt,fxye,kpic,qbme,dt,&wke,idimp,nppmx0,nx, */
-/*                      ny,mx,my,nxe,nye,mx1,mxy1,ipbc);               */
 /* updates ppartt, ncl, ihole, wke, irc */
-      if (kvec==1)
-         cvgppushf2lt(ppartt,fxye,kpic,ncl,ihole,qbme,dt,&wke,idimp,
+      cvgppushf2lt(ppartt,fxye,kpic,ncl,ihole,qbme,dt,&wke,idimp,
                       nppmx0,nx,ny,mx,my,nxe,nye,mx1,mxy1,ntmax,&irc);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2gppushf2lt(ppartt,fxye,kpic,ncl,ihole,qbme,dt,&wke,idimp,
-                         nppmx0,nx,ny,mx,my,nxe,nye,mx1,mxy1,ntmax,
-                         &irc);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tpush += time;
@@ -287,22 +243,9 @@ L500: if (nloop <= ntime)
 
 /* reorder particles by tile with OpenMP: */
       dtimer(&dtime,&itime,-1);
-/* updates ppartt, ppbuff, kpic, ncl, ihole, and irc */
-/*    if (kvec==1)                                                     */
-/*       cvpporder2lt(ppartt,ppbuff,kpic,ncl,ihole,idimp,nppmx0,nx,ny, */
-/*                    mx,my,mx1,my1,npbmx,ntmax,&irc);                 */
-/* SSE2 function */
-/*    else if (kvec==2)                                                */
-/*       csse2pporder2lt(ppartt,ppbuff,kpic,ncl,ihole,idimp,nppmx0,nx, */
-/*                       ny,mx,my,mx1,my1,npbmx,ntmax,&irc);           */
 /* updates ppartt, ppbuff, kpic, ncl, and irc */
-      if (kvec==1)
-         cvpporderf2lt(ppartt,ppbuff,kpic,ncl,ihole,idimp,nppmx0,mx1,
+      cvpporderf2lt(ppartt,ppbuff,kpic,ncl,ihole,idimp,nppmx0,mx1,
                        my1,npbmx,ntmax,&irc);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2pporderf2lt(ppartt,ppbuff,kpic,ncl,ihole,idimp,nppmx0,
-                          mx1,my1,npbmx,ntmax,&irc);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tsort += time;
@@ -347,11 +290,11 @@ L2000:
    printf("Total Particle Time (nsec) = %f\n",time*wt);
    printf("\n");
 
-   sse_deallocate(ppartt);
-   sse_deallocate(ppbuff);
-   sse_deallocate(ffc);
-   sse_deallocate(fxye);
-   sse_deallocate(qe);
+   deallocate(ppartt);
+   deallocate(ppbuff);
+   deallocate(ffc);
+   deallocate(fxye);
+   deallocate(qe);
 
    return 0;
 }
