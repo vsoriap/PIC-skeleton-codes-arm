@@ -4,7 +4,7 @@
 
 CC = gcc
 
-CCOPTS = -O3 -ftree-vectorize -Wall
+CCOPTS = -g -march=armv8-a+sve+fp -O3 -ftree-vectorize -Wall --static
 #CCOPTS = -O3 -fno-tree-vectorize -Wall
 
 # Linkage rules

@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------*/
 /* Skeleton 2D Electrostatic Vector PIC code */
-/* written by Viktor K. Decyk, UCLA and Ricardo Fonseca, ISCTE */
+/* written by Victor Soria, BSC; Viktor K. Decyk, UCLA and Ricardo Fonseca, ISCTE */
 #include <stdlib.h>
 #include <stdio.h>
 #include <complex.h>
 #include <sys/time.h>
 #include "vpush2.h"
-#include "sselib2.h"
-#include "ssepush2.h"
+#include "svelib2.h"
+#include "svepush2.h"
 
 void dtimer(double *time, struct timeval *itime, int icntrl);
 
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
    int idimp = 4, ipbc = 1, sortime = 50;
 /* wke/we/wt = particle kinetic/electric field/total energy */
    float wke = 0.0, we = 0.0, wt = 0.0;
-/* kvec = (1,2) = run (autovector,SSE2) version */
+/* kvec = (1,2) = run (autovector,SVE) version */
    int kvec = 1;
 
 /* declare scalars for standard code */
@@ -88,13 +88,13 @@ int main(int argc, char *argv[]) {
    npe = 4*((np - 1)/4 + 1);
    nxe = 4*((nxe - 1)/4 + 1);
    nxeh = nxe/2;
-   sse_fallocate(&partt,npe*idimp,&irc);
+   sve_fallocate(&partt,npe*idimp,&irc);
    if (sortime > 0)
-      sse_fallocate(&partt2,npe*idimp,&irc);
-   sse_fallocate(&qe,nxe*nye,&irc);
-   sse_fallocate(&fxye,ndim*nxe*nye,&irc);
-   sse_callocate(&ffc,nxh*nyh,&irc);
-   sse_iallocate(&npicy,ny1,&irc);
+      sve_fallocate(&partt2,npe*idimp,&irc);
+   sve_fallocate(&qe,nxe*nye,&irc);
+   sve_fallocate(&fxye,ndim*nxe*nye,&irc);
+   sve_callocate(&ffc,nxh*nyh,&irc);
+   sve_iallocate(&npicy,ny1,&irc);
    if (irc != 0) {
       printf("aligned allocation error: irc = %d\n",irc);
    }
@@ -121,9 +121,9 @@ L500: if (nloop <= ntime)
       }
       if (kvec==1)
          cvgpost2lt(partt,qe,qme,np,npe,idimp,nxe,nye);
-/* SSE2 function */
+/* SVE function */
       else if (kvec==2)
-         csse2gpost2lt(partt,qe,qme,np,npe,idimp,nxe,nye);
+         csvegpost2lt(partt,qe,qme,np,npe,idimp,nxe,nye);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tdpost += time;
@@ -132,9 +132,9 @@ L500: if (nloop <= ntime)
       dtimer(&dtime,&itime,-1);
       if (kvec==1)
          caguard2l(qe,nx,ny,nxe,nye);
-/* SSE2 function */
+/* SVE function */
       else if (kvec==2)
-         csse2aguard2l(qe,nx,ny,nxe,nye);
+         csveaguard2l(qe,nx,ny,nxe,nye);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tguard += time;
@@ -145,9 +145,9 @@ L500: if (nloop <= ntime)
       if (kvec==1) 
          cwfft2rvx((float complex *)qe,isign,mixup,sct,indx,indy,nxeh,
                    nye,nxhy,nxyh);
-/* SSE2 function */
+/* SVE function */
       else if (kvec==2)
-         csse2wfft2rx((float complex *)qe,isign,mixup,sct,indx,indy,
+         csvewfft2rx((float complex *)qe,isign,mixup,sct,indx,indy,
                       nxeh,nye,nxhy,nxyh);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
@@ -160,9 +160,9 @@ L500: if (nloop <= ntime)
       if (kvec==1) 
          cvpois22((float complex *)qe,(float complex *)fxye,isign,ffc,
                   ax,ay,affp,&we,nx,ny,nxeh,nye,nxh,nyh);
-/* SSE2 function */
+/* SVE function */
       else if (kvec==2)
-         csse2pois22((float complex *)qe,(float complex *)fxye,isign,
+         csvepois22((float complex *)qe,(float complex *)fxye,isign,
                      ffc,ax,ay,affp,&we,nx,ny,nxeh,nye,nxh,nyh);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
@@ -174,9 +174,9 @@ L500: if (nloop <= ntime)
       if (kvec==1) 
          cwfft2rv2((float complex *)fxye,isign,mixup,sct,indx,indy,nxeh,
                    nye,nxhy,nxyh);
-/* SSE2 function */
+/* SVE function */
       else if (kvec==2)
-         csse2wfft2r2((float complex *)fxye,isign,mixup,sct,indx,indy,
+         csvewfft2r2((float complex *)fxye,isign,mixup,sct,indx,indy,
                       nxeh,nye,nxhy,nxyh);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
@@ -186,9 +186,9 @@ L500: if (nloop <= ntime)
       dtimer(&dtime,&itime,-1);
       if (kvec==1) 
          ccguard2l(fxye,nx,ny,nxe,nye);
-/* SSE2 function */
+/* SVE function */
       else if (kvec==2)
-         csse2cguard2l(fxye,nx,ny,nxe,nye);
+         csvecguard2l(fxye,nx,ny,nxe,nye);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tguard += time;
@@ -196,13 +196,9 @@ L500: if (nloop <= ntime)
 /* push particles with standard procedure: updates part, wke */
       wke = 0.0;
       dtimer(&dtime,&itime,-1);
-      if (kvec==1) 
-         cvgpush2lt(partt,fxye,qbme,dt,&wke,idimp,np,npe,nx,ny,nxe,nye,
-                    ipbc);
-/* SSE2 function */
-      else if (kvec==2)
-         csse2gpush2lt(partt,fxye,qbme,dt,&wke,idimp,np,npe,nx,ny,nxe,
-                      nye,ipbc);
+/* SVE function */
+      csvegpush2lt(partt,fxye,qbme,dt,&wke,idimp,np,npe,nx,ny,nxe,
+                   nye,ipbc);
       dtimer(&dtime,&itime,1);
       time = (float) dtime;
       tpush += time;
@@ -213,9 +209,9 @@ L500: if (nloop <= ntime)
             dtimer(&dtime,&itime,-1);
             if (kvec==1) 
                cdsortp2ylt(partt,partt2,npicy,idimp,np,npe,ny1);
-/* SSE2 function */
+/* SVE function */
             else if (kvec==2)
-               csse2dsortp2ylt(partt,partt2,npicy,idimp,np,npe,ny1);
+               csvedsortp2ylt(partt,partt2,npicy,idimp,np,npe,ny1);
 /* exchange pointers */
             tpartt = partt;
             partt = partt2;
@@ -261,13 +257,13 @@ L2000:
    printf("Sort Time (nsec) = %f\n",tsort*wt);
    printf("Total Particle Time (nsec) = %f\n",time*wt);
 
-   sse_deallocate(npicy);
-   sse_deallocate(ffc);
-   sse_deallocate(fxye);
-   sse_deallocate(qe);
+   sve_deallocate(npicy);
+   sve_deallocate(ffc);
+   sve_deallocate(fxye);
+   sve_deallocate(qe);
    if (sortime > 0)
-      sse_deallocate(partt2);
-   sse_deallocate(partt);
+      sve_deallocate(partt2);
+   sve_deallocate(partt);
 
    return 0;
 }

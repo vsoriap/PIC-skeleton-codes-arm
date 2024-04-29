@@ -2,10 +2,10 @@
 
 # Makefile gfortran compiler with Linux
 
-CC = gcc
+CC = aarch64-linux-gnu-gcc
 
-CCOPTS = -O3 -ftree-vectorize -Wall
-#CCOPTS = -O3 -fno-tree-vectorize -Wall
+CCOPTS = -march=armv8-a+sve+fp -O3 -ftree-vectorize -Wall -static
+#CCOPTS = -O3 -fno-tree-vectorize -Wall -std=c99
 
 # Linkage rules
 
